@@ -121,7 +121,8 @@ drm_plane_get_type (int fd, drmModePlane * plane)
 {
   drmModeObjectPropertiesPtr props;
   drmModePropertyPtr prop;
-  int i, type = -1;
+  guint i;
+  int type = -1;
 
   props = drmModeObjectGetProperties (fd, plane->plane_id,
       DRM_MODE_OBJECT_PLANE);
@@ -143,10 +144,12 @@ static drmModePlane *
 drm_find_plane_for_crtc_by_type (int fd, drmModeRes * res,
     drmModePlaneRes * pres, int crtc_id, int type)
 {
-  int i, pipe = -1, num_primary = 0;
+  int i;
+  int pipe = -1;
+  int num_primary = 0;
 
   for (i = 0; i < res->count_crtcs; i++) {
-    if (crtc_id == res->crtcs[i]) {
+    if ((guint32) crtc_id == res->crtcs[i]) {
       pipe = i;
       break;
     }
@@ -155,7 +158,7 @@ drm_find_plane_for_crtc_by_type (int fd, drmModeRes * res,
   if (pipe == -1)
     return NULL;
 
-  for (i = 0; i < pres->count_planes; i++) {
+  for (i = 0; i < (int) pres->count_planes; i++) {
     drmModePlane *plane = drmModeGetPlane (fd, pres->planes[i]);
     int plane_type = drm_plane_get_type (fd, plane);
     int primary = plane_type == DRM_PLANE_TYPE_PRIMARY;
@@ -199,7 +202,7 @@ drm_find_crtc_for_connector (int fd, drmModeRes * res, drmModeConnector * conn,
   for (i = 0; i < res->count_crtcs; i++) {
     crtc = drmModeGetCrtc (fd, res->crtcs[i]);
     if (crtc) {
-      if (crtc_id == crtc->crtc_id) {
+      if (crtc_id == (int) crtc->crtc_id) {
         if (pipe)
           *pipe = i;
         return crtc;
@@ -237,7 +240,7 @@ drm_find_used_connector_by_type (int fd, drmModeRes * res, int type)
   for (i = 0; i < res->count_connectors; i++) {
     conn = drmModeGetConnector (fd, res->connectors[i]);
     if (conn) {
-      if ((conn->connector_type == type)
+      if ((conn->connector_type == (guint32) type)
           && drm_connector_is_used (fd, res, conn))
         return conn;
       drmModeFreeConnector (conn);
@@ -273,7 +276,7 @@ drm_find_main_monitor (int fd, drmModeRes * res)
   static const int priority[] = { DRM_MODE_CONNECTOR_LVDS,
     DRM_MODE_CONNECTOR_eDP
   };
-  int i;
+  gsize i;
   drmModeConnector *conn;
 
   conn = NULL;
@@ -361,7 +364,7 @@ check_afbc (GstRkXImageSink * self, drmModePlane * plane, guint32 drmfmt,
   struct drm_format_modifier *modifiers;
   guint32 *formats;
   guint64 value = 0;
-  gint i, j;
+  guint32 i, j;
 
   *linear = *afbc = FALSE;
 
@@ -414,7 +417,7 @@ check_afbc (GstRkXImageSink * self, drmModePlane * plane, guint32 drmfmt,
 
       if ((i < mod->offset) || (i > mod->offset + 63))
         continue;
-      if (!(mod->formats & (1 << (i - mod->offset))))
+      if (!(mod->formats & (1ULL << (i - mod->offset))))
         continue;
 
       if (mod->modifier == DRM_AFBC_MODIFIER)
@@ -432,7 +435,7 @@ drm_ensure_allowed_caps (GstRkXImageSink * self, drmModePlane * plane,
     drmModeRes * res)
 {
   GstCaps *out_caps, *caps;
-  int i;
+  guint32 i;
   GstVideoFormat fmt;
   const gchar *format;
 
@@ -500,7 +503,8 @@ drm_plane_set_property (GstRkXImageSink * self, drmModePlane * plane,
 {
   drmModeObjectPropertiesPtr props;
   drmModePropertyPtr prop;
-  int i, ret = -1;
+  guint32 i;
+  int ret = -1;
 
   props = drmModeObjectGetProperties (self->fd, plane->plane_id,
       DRM_MODE_OBJECT_PLANE);
@@ -884,6 +888,11 @@ static void
 sync_handler (gint fd, guint frame, guint sec, guint usec, gpointer data)
 {
   gboolean *waiting;
+
+  (void) fd;
+  (void) frame;
+  (void) sec;
+  (void) usec;
 
   waiting = data;
   *waiting = FALSE;

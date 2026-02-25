@@ -52,6 +52,8 @@ G_DEFINE_TYPE_WITH_CODE (GstKMSBufferPool, gst_kms_buffer_pool,
 static const gchar **
 gst_kms_buffer_pool_get_options (GstBufferPool * pool)
 {
+  (void) pool;
+
   static const gchar *options[] = { GST_BUFFER_POOL_OPTION_VIDEO_META,
     GST_BUFFER_POOL_OPTION_KMS_BUFFER,
     GST_BUFFER_POOL_OPTION_KMS_PRIME_EXPORT,
@@ -137,6 +139,8 @@ gst_kms_buffer_pool_alloc_buffer (GstBufferPool * pool, GstBuffer ** buffer,
   GstKMSBufferPoolPrivate *priv;
   GstVideoInfo *info;
   GstMemory *mem;
+
+  (void) params;
 
   vpool = GST_KMS_BUFFER_POOL_CAST (pool);
   priv = vpool->priv;

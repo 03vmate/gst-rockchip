@@ -352,6 +352,9 @@ gst_kms_memory_map (GstMemory * mem, gsize maxsize, GstMapFlags flags)
   gpointer out;
   struct drm_mode_map_dumb arg = { 0, };
 
+  (void) maxsize;
+  (void) flags;
+
   alloc = (GstKMSAllocator *) mem->allocator;
 
   if (!check_fd (alloc))
@@ -588,7 +591,10 @@ gst_kms_allocator_dmabuf_import (GstAllocator * allocator, gint * prime_fds,
     goto failed;
 
   for (i = 0; i < n_planes; i++) {
-    struct drm_gem_close arg = { kmsmem->gem_handle[i], };
+    struct drm_gem_close arg = {
+      .handle = kmsmem->gem_handle[i],
+      .pad = 0,
+    };
     gint err;
 
     if (handle == arg.handle)

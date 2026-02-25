@@ -77,7 +77,7 @@ static const struct
 GstVideoFormat
 gst_video_format_from_drm (guint32 drmfmt)
 {
-  gint i;
+  guint i;
 
   for (i = 0; i < G_N_ELEMENTS (format_map); i++) {
     if (format_map[i].fourcc == drmfmt)
@@ -90,7 +90,7 @@ gst_video_format_from_drm (guint32 drmfmt)
 guint32
 gst_drm_format_from_video (GstVideoFormat fmt)
 {
-  gint i;
+  guint i;
 
   for (i = 0; i < G_N_ELEMENTS (format_map); i++) {
     if (format_map[i].format == fmt)
@@ -175,7 +175,7 @@ gst_video_format_to_structure (GstVideoFormat format)
 GstCaps *
 gst_kms_sink_caps_template_fill (void)
 {
-  gint i;
+  guint i;
   GstCaps *caps;
   GstStructure *template;
 
@@ -210,7 +210,8 @@ gst_video_calculate_device_ratio (guint dev_width, guint dev_height,
     guint * dpy_par_n, guint * dpy_par_d)
 {
   gdouble ratio, delta, cur_delta;
-  gint i, j, index, windex;
+  guint i, j;
+  guint index, windex;
 
   /* First, calculate the "real" ratio based on the X values; which is
    * the "physical" w/h divided by the w/h in pixels of the display */
