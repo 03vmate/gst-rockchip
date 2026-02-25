@@ -1,5 +1,23 @@
 # GStreamer plugin for Rockchip MPP and RGA
 
+# Prerequisites
+The code was tested to be working with nyanmisaka's MPP and RGA forks on an RK3588. Your mileage may vary.
+
+To build and install MPP and RKA:
+```bash
+git clone -b jellyfin-mpp --depth=1 https://gitee.com/nyanmisaka/mpp.git rkmpp
+cd rkmpp && mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DBUILD_TEST=OFF ..
+make
+sudo make install
+```
+```bash
+git clone -b jellyfin-rga --depth=1 https://gitee.com/nyanmisaka/rga.git rkrga
+cd rkrga
+meson setup build --prefix=/usr --libdir=lib --buildtype=release --default-library=shared -Dcpp_args=-fpermissive -Dlibdrm=false -Dlibrga_demo=false
+sudo ninja -C build install
+```
+
 # Build
 
 ```bash
