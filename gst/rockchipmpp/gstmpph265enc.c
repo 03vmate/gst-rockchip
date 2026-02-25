@@ -43,8 +43,8 @@ struct _GstMppH265Enc
   guint qp_init;
   guint qp_min;
   guint qp_max;
-  guint qp_min_i;
-  guint qp_max_i;
+  gint qp_min_i;
+  gint qp_max_i;
   gint qp_ip;
 };
 
@@ -125,7 +125,7 @@ gst_mpp_h265_enc_set_property (GObject * object,
       break;
     }
     case PROP_QP_MIN_I:{
-      guint qp_min_i = g_value_get_uint (value);
+      gint qp_min_i = g_value_get_int (value);
       if (self->qp_min_i == qp_min_i)
         return;
 
@@ -133,7 +133,7 @@ gst_mpp_h265_enc_set_property (GObject * object,
       break;
     }
     case PROP_QP_MAX_I:{
-      guint qp_max_i = g_value_get_uint (value);
+      gint qp_max_i = g_value_get_int (value);
       if (self->qp_max_i == qp_max_i)
         return;
 
@@ -174,10 +174,10 @@ gst_mpp_h265_enc_get_property (GObject * object,
       g_value_set_uint (value, self->qp_max);
       break;
     case PROP_QP_MIN_I:
-      g_value_set_uint (value, self->qp_min_i);
+      g_value_set_int (value, self->qp_min_i);
       break;
     case PROP_QP_MAX_I:
-      g_value_set_uint (value, self->qp_max_i);
+      g_value_set_int (value, self->qp_max_i);
       break;
     case PROP_QP_IP:
       g_value_set_int (value, self->qp_ip);
