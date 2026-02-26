@@ -117,6 +117,3 @@ configinc = include_directories('.')
 subdir('gst')
 
 configure_file(output : 'config.h', configuration : cdata)
-
-python = import('python').find_installation()
-run_command(python, '-c', 'import shutil; shutil.copy("hooks/pre-commit.hook", ".git/hooks/pre-commit")', check : false)
