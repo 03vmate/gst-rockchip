@@ -236,6 +236,8 @@ gst_mpp_jpeg_dec_set_format (GstVideoDecoder * decoder,
   gint height = GST_VIDEO_INFO_HEIGHT (&state->info);
   gint dst_width, dst_height;
   guint align = GST_MPP_ALIGNMENT;
+  gint crop_x = 0, crop_y = 0, crop_w = 0, crop_h = 0;
+  gboolean crop = FALSE;
 
   if (!width || !height) {
     GST_ERROR_OBJECT (self, "invalid input video info");
@@ -270,6 +272,39 @@ gst_mpp_jpeg_dec_set_format (GstVideoDecoder * decoder,
   dst_width = GST_VIDEO_INFO_WIDTH (info);
   dst_height = GST_VIDEO_INFO_HEIGHT (info);
 
+  if (mppdec->crop_x || mppdec->crop_y || mppdec->crop_w || mppdec->crop_h) {
+    const GstVideoFormatInfo *finfo = gst_video_format_get_info (src_format);
+
+    crop_x = CLAMP ((gint) mppdec->crop_x, 0, width - 1);
+    crop_y = CLAMP ((gint) mppdec->crop_y, 0, height - 1);
+
+    crop_w = width - crop_x;
+    crop_h = height - crop_y;
+
+    if (mppdec->crop_w && (gint) mppdec->crop_w < crop_w)
+      crop_w = mppdec->crop_w;
+
+    if (mppdec->crop_h && (gint) mppdec->crop_h < crop_h)
+      crop_h = mppdec->crop_h;
+
+    if (finfo && (finfo->flags & GST_VIDEO_FORMAT_FLAG_YUV)) {
+      crop_w &= ~1;
+      crop_h &= ~1;
+    }
+
+    if (crop_w >= 2 && crop_h >= 2) {
+      crop = TRUE;
+
+      if (mppdec->rotation % 180) {
+        dst_width = crop_h;
+        dst_height = crop_w;
+      } else {
+        dst_width = crop_w;
+        dst_height = crop_h;
+      }
+    }
+  }
+
   /* Prefer MPP internal format conversion (PP) */
   if (src_format != dst_format) {
     GstVideoFormat pp_format = GST_VIDEO_FORMAT_UNKNOWN;
@@ -291,7 +326,7 @@ gst_mpp_jpeg_dec_set_format (GstVideoDecoder * decoder,
       src_format = pp_format;
   }
 
-  if (mppdec->rotation ||
+  if (mppdec->rotation || crop ||
       dst_format != src_format || dst_width != width || dst_height != height) {
     /* Conversion required */
     GST_INFO_OBJECT (self, "convert from %s (%dx%d) to %s (%dx%d)",

@@ -84,7 +84,8 @@ gboolean gst_mpp_rga_convert (GstBuffer * inbuf, GstVideoInfo * src_vinfo,
     GstMemory * out_mem, GstVideoInfo * dst_vinfo, gint rotation);
 
 gboolean gst_mpp_rga_convert_from_mpp_frame (MppFrame * mframe,
-    GstMemory * out_mem, GstVideoInfo * dst_vinfo, gint rotation);
+  GstMemory * out_mem, GstVideoInfo * dst_vinfo, gint rotation,
+  gint crop_x, gint crop_y, gint crop_w, gint crop_h);
 #endif
 
 /* Apply new format and size without reinit the video info */

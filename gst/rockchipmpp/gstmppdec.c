@@ -496,6 +496,8 @@ gst_mpp_dec_apply_info_change (GstVideoDecoder * decoder, MppFrame mframe)
   gint offset_y = mpp_frame_get_offset_y (mframe);
   gint dst_width, dst_height;
   gboolean afbc;
+  gint crop_x = 0, crop_y = 0, crop_w = 0, crop_h = 0;
+  gboolean crop = FALSE;
 
   if (hstride % 2 || vstride % 2)
     return GST_FLOW_NOT_NEGOTIATED;
@@ -514,7 +516,42 @@ gst_mpp_dec_apply_info_change (GstVideoDecoder * decoder, MppFrame mframe)
   dst_width = GST_VIDEO_INFO_WIDTH (info);
   dst_height = GST_VIDEO_INFO_HEIGHT (info);
 
-  if (self->rotation || dst_format != src_format ||
+  if (self->crop_x || self->crop_y || self->crop_w || self->crop_h) {
+    const GstVideoFormatInfo *finfo = gst_video_format_get_info (src_format);
+
+    crop_x = CLAMP ((gint) self->crop_x, 0, width - 1);
+    crop_y = CLAMP ((gint) self->crop_y, 0, height - 1);
+
+    crop_w = width - crop_x;
+    crop_h = height - crop_y;
+
+    if (self->crop_w && (gint) self->crop_w < crop_w)
+      crop_w = self->crop_w;
+
+    if (self->crop_h && (gint) self->crop_h < crop_h)
+      crop_h = self->crop_h;
+
+    if (finfo && (finfo->flags & GST_VIDEO_FORMAT_FLAG_YUV)) {
+      crop_x &= ~1;
+      crop_y &= ~1;
+      crop_w &= ~1;
+      crop_h &= ~1;
+    }
+
+    if (crop_w >= 2 && crop_h >= 2) {
+      crop = TRUE;
+
+      if (self->rotation % 180) {
+        dst_width = crop_h;
+        dst_height = crop_w;
+      } else {
+        dst_width = crop_w;
+        dst_height = crop_h;
+      }
+    }
+  }
+
+  if (self->rotation || crop || dst_format != src_format ||
       dst_width != width || dst_height != height) {
     if (afbc || offset_x || offset_y) {
       GST_ERROR_OBJECT (self, "unable to convert with AFBC or offsets (%d, %d)",
@@ -718,13 +755,39 @@ gst_mpp_dec_rga_convert (GstVideoDecoder * decoder, MppFrame mframe,
   GstVideoInfo *info = &self->info;
   GstMemory *mem;
   gboolean ret;
+  gint width = mpp_frame_get_width (mframe);
+  gint height = mpp_frame_get_height (mframe);
+  gint crop_x = 0, crop_y = 0, crop_w = 0, crop_h = 0;
+
+  if (self->crop_x || self->crop_y || self->crop_w || self->crop_h) {
+    crop_x = CLAMP ((gint) self->crop_x, 0, width - 1);
+    crop_y = CLAMP ((gint) self->crop_y, 0, height - 1);
+
+    crop_w = width - crop_x;
+    crop_h = height - crop_y;
+
+    if (self->crop_w && (gint) self->crop_w < crop_w)
+      crop_w = self->crop_w;
+
+    if (self->crop_h && (gint) self->crop_h < crop_h)
+      crop_h = self->crop_h;
+
+    crop_x &= ~1;
+    crop_y &= ~1;
+    crop_w &= ~1;
+    crop_h &= ~1;
+
+    if (crop_w < 2 || crop_h < 2)
+      crop_x = crop_y = crop_w = crop_h = 0;
+  }
 
   GST_VIDEO_DECODER_STREAM_UNLOCK (decoder);
 
   mem = gst_allocator_alloc (self->allocator, GST_VIDEO_INFO_SIZE (info), NULL);
   g_return_val_if_fail (mem, FALSE);
 
-  if (!gst_mpp_rga_convert_from_mpp_frame (mframe, mem, info, self->rotation)) {
+  if (!gst_mpp_rga_convert_from_mpp_frame (mframe, mem, info,
+          self->rotation, crop_x, crop_y, crop_w, crop_h)) {
     GST_WARNING_OBJECT (self, "failed to convert");
     gst_memory_unref (mem);
     ret = FALSE;
@@ -774,7 +837,8 @@ gst_mpp_dec_get_gst_buffer (GstVideoDecoder * decoder, MppFrame mframe)
     return NULL;
   }
 
-  if (afbc || offset_x || offset_y || crop_x || crop_y || crop_w || crop_h) {
+  if (!self->convert &&
+      (afbc || offset_x || offset_y || crop_x || crop_y || crop_w || crop_h)) {
     GstVideoCropMeta *cmeta = gst_buffer_add_video_crop_meta (buffer);
     gint width = mpp_frame_get_width (mframe);
     gint height = mpp_frame_get_height (mframe);

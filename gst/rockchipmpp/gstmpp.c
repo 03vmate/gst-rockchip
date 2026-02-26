@@ -313,7 +313,8 @@ gst_mpp_rga_convert (GstBuffer * inbuf, GstVideoInfo * src_vinfo,
 
 gboolean
 gst_mpp_rga_convert_from_mpp_frame (MppFrame * mframe,
-    GstMemory * out_mem, GstVideoInfo * dst_vinfo, gint rotation)
+  GstMemory * out_mem, GstVideoInfo * dst_vinfo, gint rotation,
+  gint crop_x, gint crop_y, gint crop_w, gint crop_h)
 {
   rga_info_t src_info = { 0, };
   rga_info_t dst_info = { 0, };
@@ -325,6 +326,20 @@ gst_mpp_rga_convert_from_mpp_frame (MppFrame * mframe,
     return FALSE;
 
   dst_info.fd = gst_dmabuf_memory_get_fd (out_mem);
+
+  if (crop_w > 0 && crop_h > 0) {
+    if (crop_x < 0 || crop_y < 0)
+      return FALSE;
+
+    if (crop_x + crop_w > src_info.rect.width ||
+        crop_y + crop_h > src_info.rect.height)
+      return FALSE;
+
+    src_info.rect.xoffset = crop_x;
+    src_info.rect.yoffset = crop_y;
+    src_info.rect.width = crop_w;
+    src_info.rect.height = crop_h;
+  }
 
   src_info.rotation = gst_mpp_rga_get_rotation (rotation);
   if (src_info.rotation < 0)
